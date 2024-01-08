@@ -20,7 +20,7 @@ export const loginUser = createAsyncThunk(
   async (userData) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5001/api/users/login",
+        "http://3.221.89.243:5001/api/users/login",
         userData
       );
       return response.data; // Ensure the response structure matches the expected 'user' property
@@ -35,21 +35,23 @@ export const registerUser = createAsyncThunk(
   "netflix/registerUser",
   async (userData) => {
     const response = await axios.post(
-      "http://127.0.0.1:5001/api/users/register",
+      "http://3.221.89.243:5001/api/users/register",
       userData
     );
     return response.data;
   }
 );
 
-export const getGenres = createAsyncThunk("netflix/genres", async () => {
-  const {
-    data: { genres },
-  } = await axios.get(
-    "http://localhost:5003/api/discover/movie/genre"
-  );
-  return genres;
-});
+export const getGenres = createAsyncThunk(
+  'netflix/genres',
+  async (payload, { getState }) => {
+    const type = payload?.type || 'movie'; // Get type from payload or default to 'all'
+    const {
+      data: { genres },
+    } = await axios.get(`http://3.221.89.243:5003/api/discover/${type}/genre`);
+    return genres;
+  }
+);
 
 const createArrayFromRawData = (array, moviesArray, genres) => {
   array.forEach((movie) => {
@@ -73,7 +75,7 @@ const getRawData = async (api, genres, paging = false) => {
   for (let i = 1; moviesArray.length < 60 && i < 10; i++) {
     const {
       data: { results },
-    } = await axios.get(`${api}${paging ? `&page=${i}` : ""}`);
+    } = await axios.get(`${api}${paging ? `?page=${i}` : ""}`);
     createArrayFromRawData(results, moviesArray, genres);
   }
   return moviesArray;
@@ -88,7 +90,7 @@ export const fetchDataByGenre = createAsyncThunk(
 
     console.log(genre +" and "+ type);
     return getRawData(
-      `${TMDB_BASE_URL}/discover/${type}?api_key=${API_KEY}&with_genres=${genre}`,
+      `http://3.221.89.243:5003/api/discover/${type}/${genre}`,
       genres
     );
   }
@@ -101,7 +103,7 @@ export const fetchMovies = createAsyncThunk(
       netflix: { genres },
     } = thunkAPI.getState();
     return getRawData(
-      `${TMDB_BASE_URL}/trending/${type}/week?api_key=${API_KEY}`,
+      `http://3.221.89.243:5003/api/discover/${type}`,
       genres,
       true
     );
@@ -112,12 +114,12 @@ export const fetchVideoKey = createAsyncThunk(
   "netflix/videoKey",
   async (movieId) => {
     const response = await axios.get(
-      `https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${API_KEY}`
+      `http://3.221.89.243:5003/api/discover/video/${movieId}`
     );
-    const { results } = response.data;
+    const { key } = response.data;
     // Assuming there's at least one video available
-    if (results && results.length > 0) {
-      return results[0].key; // Return the first video's key
+    if (key) {
+      return key; // Return the first video's key
     } else {
       return ""; // Or handle if there's no video key available
     }
@@ -129,7 +131,7 @@ export const getUsersLikedMovies = createAsyncThunk(
   async (email) => {
     const {
       data: { movies },
-    } = await axios.get(`http://localhost:5002/api/movies/liked/${email}`);
+    } = await axios.get(`http://3.221.89.243:5002/api/movies/liked/${email}`);
     return movies;
   }
 );
@@ -139,7 +141,7 @@ export const removeMovieFromLiked = createAsyncThunk(
   async ({ movieId, email }) => {
     const {
       data: { movies },
-    } = await axios.put("http://localhost:5002/api/movies/remove", {
+    } = await axios.put("http://3.221.89.243:5002/api/movies/remove", {
       email,
       movieId,
     });
